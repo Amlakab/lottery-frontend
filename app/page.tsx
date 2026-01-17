@@ -18,7 +18,9 @@ const FloatingElements = () => {
     '🎨', '🚀', '🌈', '🔥', '💎', '🌠', '🎪', '🎭', '🎫', '🎮',
     '👑', '💍', '📱', '💻', '🕹️', '🎯', '🎪', '🎡', '🎢', '🎠',
     '📀', '💿', '📱', '⌚', '💾', '📞', '☎️', '📟', '📠', '🔋',
-    '💡', '🔦', '🕯️', '🧭', '⏱️', '⏲️', '⏰', '🕰️', '🌡️', '🧨'
+    '💡', '🔦', '🕯️', '🧭', '⏱️', '⏲️', '⏰', '🕰️', '🌡️', '🧨',
+    '🎯', '🎡', '🎠', '🎪', '🎨', '🎭', '🎫', '🎮', '🕹️', '👾',
+    '🔮', '🎊', '🎉', '✨', '🌟', '💫', '☄️', '🌌', '🪐', '⭐'
   ];
 
   useEffect(() => {
@@ -96,15 +98,15 @@ const ConfettiBurst = () => {
             delay: Math.random() * 1,
           }}
         >
-          {['🎉', '✨', '⭐', '🎊', '💫', '🔥', '🌈', '🚀', '💎'][i % 10]}
+          {['🎉', '✨', '⭐', '🎊', '💫', '🔥', '🌈', '🚀', '💎', '🎯'][i % 10]}
         </motion.div>
       ))}
     </div>
   );
 };
 
-// Multiple Rocket animations
-const RocketAnimation = () => {
+// Multiple Spinner animations
+const SpinnerAnimation = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -116,14 +118,14 @@ const RocketAnimation = () => {
 
   return (
     <>
-      {/* Main rocket */}
+      {/* Main spinner */}
       <motion.div
         className="fixed bottom-0 left-1/4 text-4xl z-20"
         initial={{ y: 100, opacity: 0, x: -50 }}
-        animate={{ y: -1000, opacity: 1, x: 0 }}
+        animate={{ y: -1000, opacity: 1, x: 0, rotate: 360 }}
         transition={{ duration: 4, ease: "easeOut" }}
       >
-        🚀
+        🎡
         <motion.div
           className="absolute left-0 text-xl"
           animate={{ opacity: [0, 1, 0] }}
@@ -133,23 +135,23 @@ const RocketAnimation = () => {
         </motion.div>
       </motion.div>
 
-      {/* Additional smaller rockets */}
+      {/* Additional spinning elements */}
       <motion.div
         className="fixed bottom-0 left-1/3 text-3xl z-20"
         initial={{ y: 150, opacity: 0, x: -30 }}
-        animate={{ y: -800, opacity: 1, x: 20 }}
+        animate={{ y: -800, opacity: 1, x: 20, rotate: -360 }}
         transition={{ duration: 5, ease: "easeOut", delay: 1 }}
       >
-        🚀
+        🎯
       </motion.div>
 
       <motion.div
         className="fixed bottom-0 left-2/3 text-2xl z-20"
         initial={{ y: 200, opacity: 0, x: 30 }}
-        animate={{ y: -600, opacity: 1, x: -20 }}
+        animate={{ y: -600, opacity: 1, x: -20, rotate: 720 }}
         transition={{ duration: 6, ease: "easeOut", delay: 2 }}
       >
-        🚀
+        🎰
       </motion.div>
     </>
   );
@@ -172,7 +174,7 @@ const AnimatedCard = ({ emoji, title, description, delay }: { emoji: string; tit
       {emoji}
     </motion.div>
     <h2 className="text-xl font-bold mb-2">{title}</h2>
-    <p>{description}</p>
+    <p className="text-gray-600">{description}</p>
   </motion.div>
 );
 
@@ -186,14 +188,14 @@ const AnimatedStep = ({ number, title, description, delay }: { number: number; t
     whileHover={{ scale: 1.1 }}
   >
     <motion.div
-      className="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2"
+      className="bg-gradient-to-r from-blue-500 to-purple-500 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2"
       animate={{ rotate: [0, 360], scale: [1, 1.1, 1] }}
       transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
     >
-      <span className="text-xl font-bold">{number}</span>
+      <span className="text-xl font-bold text-white">{number}</span>
     </motion.div>
-    <h3 className="font-bold">{title}</h3>
-    <p className="text-sm">{description}</p>
+    <h3 className="font-bold text-gray-800">{title}</h3>
+    <p className="text-sm text-gray-600">{description}</p>
   </motion.div>
 );
 
@@ -248,9 +250,8 @@ export default function Home() {
     // Handle URL parameters
     const handleUrlParams = async () => {
       const urlParams = new URLSearchParams(window.location.search);
-       const encryptedId = urlParams.get('agent_id'); // Get encrypted ID
-       const agentId = encryptedId ? await encryptionService.decryptId(encryptedId) : null;
-      // const agentId = urlParams.get('agent_id');
+      const encryptedId = urlParams.get('agent_id'); // Get encrypted ID
+      const agentId = encryptedId ? await encryptionService.decryptId(encryptedId) : null;
       const tgId = urlParams.get('tg_id');
       
       if (agentId || tgId) {
@@ -286,9 +287,9 @@ export default function Home() {
         <Navbar />
       </div>
       
-      {/* Confetti and rockets */}
+      {/* Confetti and spinner animations */}
       {showConfetti && <ConfettiBurst />}
-      <RocketAnimation />
+      <SpinnerAnimation />
       
       {/* Main content with padding to account for fixed navbar */}
       <div className="pt-16">
@@ -301,7 +302,7 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              Welcome to Feta Bingo
+              Welcome to Feta Spinner
             </motion.h1>
             
             <motion.p 
@@ -310,170 +311,204 @@ export default function Home() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.3 }}
             >
-              Play Bingo, win real money, and have fun!
+              Spin the wheel, win amazing prizes, and experience the thrill!
             </motion.p>
             
             <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-        >
-          {user ? (
-            <div className="flex space-x-4 justify-center">
-            <Link
-              href="/user/lobby"
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
             >
-              Play Now
-            </Link>
-            <Link
-              href="/spinner/dashboard"
-              className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
-            >
-              My Dashboard
-            </Link>
-          </div>
-          ) : (
-            <div className="space-x-4">
-              <Link
-                href="/auth/register"
-                className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
-              >
-              Get Started
-              </Link>
-              <Link
-                href="/spinner-auth/login"
-                className="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg text-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
-              >
-              Login
-              </Link>
-            </div>
-          )}
-        </motion.div>
+              {user ? (
+                <div className="flex space-x-4 justify-center">
+                  <Link
+                    href="/spinner/spinnerlobby"
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  >
+                    🎡 Play Spinner
+                  </Link>
+                  <Link
+                    href="/spinner/dashboard"
+                    className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  >
+                    📊 My Dashboard
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-x-4">
+                  <Link
+                    href="/auth/register"
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  >
+                    Get Started Free
+                  </Link>
+                  <Link
+                    href="/spinner-auth/login"
+                    className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  >
+                    Login to Play
+                  </Link>
+                </div>
+              )}
+            </motion.div>
 
-
-            {/* Floating coins animation */}
+            {/* Floating spinner elements */}
             <motion.div
               className="absolute top-20 right-10 text-3xl"
-              animate={{ y: [0, -20, 0], rotate: [0, 10, -10, 0] }}
+              animate={{ y: [0, -20, 0], rotate: [0, 360, 0] }}
               transition={{ duration: 3, repeat: Infinity }}
             >
-              💰
+              🎡
             </motion.div>
             <motion.div
               className="absolute top-40 left-10 text-3xl"
-              animate={{ y: [0, -15, 0], rotate: [0, -15, 15, 0] }}
+              animate={{ y: [0, -15, 0], rotate: [0, -360, 0] }}
               transition={{ duration: 4, repeat: Infinity, delay: 1 }}
             >
-              🎯
+              🎰
             </motion.div>
             {/* Additional floating elements */}
             <motion.div
               className="absolute top-60 right-1/4 text-2xl"
-              animate={{ y: [0, -25, 0], rotate: [0, 15, -15, 0] }}
+              animate={{ y: [0, -25, 0], rotate: [0, 720, 0] }}
               transition={{ duration: 5, repeat: Infinity, delay: 0.5 }}
             >
-              ⭐
+              🎯
             </motion.div>
             <motion.div
               className="absolute top-80 left-1/4 text-2xl"
-              animate={{ y: [0, -30, 0], rotate: [0, -20, 20, 0] }}
+              animate={{ y: [0, -30, 0], rotate: [0, -720, 0] }}
               transition={{ duration: 6, repeat: Infinity, delay: 0.7 }}
             >
-              🎲
+              🎪
             </motion.div>
           </section>
 
-             {/* Winning Celebration Section */}
+          {/* Winning Celebration Section */}
           <motion.section 
-            className="text-center p-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg text-white relative z-10 mb-12"
+            className="text-center p-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg text-white relative z-10 mb-12 overflow-hidden"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 1.2 }}
           >
+            <motion.div
+              className="absolute -top-10 -right-10 text-8xl opacity-10"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            >
+              🏆
+            </motion.div>
+            <motion.div
+              className="absolute -bottom-10 -left-10 text-8xl opacity-10"
+              animate={{ rotate: -360 }}
+              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+            >
+              💰
+            </motion.div>
+            
             <motion.h2 
               className="text-3xl font-bold mb-4"
               animate={{ scale: [1, 1.1, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              🎉 Congratulations! 🎉
+              🎉 Daily Winners! 🎉
             </motion.h2>
-            <p className="text-lg mb-4">Join thousands of winners today!</p>
+            <p className="text-lg mb-4">Join our community of winners spinning daily!</p>
             <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="text-4xl"
+              animate={{ rotate: [0, 360], scale: [1, 1.2, 1] }}
+              transition={{ duration: 3, repeat: Infinity }}
+              className="text-5xl"
             >
-              🏆
+              🎡
             </motion.div>
           </motion.section>
 
           {/* Features Section */}
           <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 relative z-10">
             <AnimatedCard
-              emoji="🎯"
-              title="Easy to Play"
-              description="Simple rules, exciting gameplay. Anyone can play and win!"
+              emoji="🎡"
+              title="Exciting Spinner Game"
+              description="Spin the wheel and win amazing prizes with every turn!"
               delay={0.1}
             />
             <AnimatedCard
               emoji="💰"
-              title="Win Real Money"
-              description="Deposit, play, and withdraw your winnings easily."
+              title="Instant Prizes"
+              description="Win valuable items and prizes instantly with every spin!"
               delay={0.3}
             />
             <AnimatedCard
               emoji="⚡"
-              title="Fast Payouts"
-              description="Get your winnings quickly through secure payment methods."
+              title="Fast & Fair Gameplay"
+              description="Transparent spinning with instant results every time!"
               delay={0.5}
             />
           </section>
 
           {/* How to Play Section */}
-          <section className="bg-blue-50 p-8 rounded-lg relative z-10 overflow-hidden mb-12">
+          <section className="bg-gradient-to-r from-blue-50 to-purple-50 p-8 rounded-lg relative z-10 overflow-hidden mb-12 border border-gray-200">
             <motion.div
               className="absolute -top-10 -right-10 text-6xl opacity-10"
               animate={{ rotate: 360 }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
             >
-              🎰
+              🎡
             </motion.div>
             <motion.div
               className="absolute -bottom-5 -left-5 text-6xl opacity-10"
               animate={{ rotate: -360 }}
               transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
             >
-              🎲
+              🎰
             </motion.div>
 
             <motion.h2 
-              className="text-2xl font-bold mb-4 text-center"
+              className="text-2xl font-bold mb-6 text-center text-gray-800"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6 }}
             >
-              How to Play
+              How to Play Feta Spinner
             </motion.h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 relative z-10">
-              <AnimatedStep number={1} title="Register" description="Create your account with your phone number" delay={0.1} />
-              <AnimatedStep number={2} title="Deposit" description="Add funds to your wallet securely" delay={0.3} />
-              <AnimatedStep number={3} title="Play" description="Choose a game and buy your Bingo cards" delay={0.5} />
-              <AnimatedStep number={4} title="Win" description="Complete patterns and claim your prizes" delay={0.7} />
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10">
+              <AnimatedStep 
+                number={1} 
+                title="Select Items" 
+                description="Choose the items you want to include in the spinner" 
+                delay={0.1} 
+              />
+              <AnimatedStep 
+                number={2} 
+                title="Set Value" 
+                description="Enter the sold value for the spinner game" 
+                delay={0.3} 
+              />
+              <AnimatedStep 
+                number={3} 
+                title="Spin Wheel" 
+                description="Press spin and watch the wheel determine the winner" 
+                delay={0.5} 
+              />
+              <AnimatedStep 
+                number={4} 
+                title="Win Prize" 
+                description="Claim your prize item and track your earnings" 
+                delay={0.7} 
+              />
             </div>
 
             <motion.div 
-              className="mt-6 text-center"
+              className="mt-8 text-center"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.9 }}
             >
               <Link
-                href="/howtoplay"
-                className="inline-flex items-center bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg text-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+                href="/spinner/spinnerlobby"
+                className="inline-flex items-center bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
               >
-                See More
+                Start Spinning Now
                 <motion.span
                   animate={{ x: [0, 5, 0] }}
                   transition={{ duration: 1, repeat: Infinity }}
@@ -485,7 +520,52 @@ export default function Home() {
             </motion.div>
           </section>
 
-          
+          {/* Why Choose Us Section */}
+          <section className="mb-12 relative z-10">
+            <motion.h2 
+              className="text-3xl font-bold text-center mb-8 text-gray-800"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 1 }}
+            >
+              Why Choose Feta Spinner?
+            </motion.h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <motion.div 
+                className="bg-white p-6 rounded-lg shadow-md border border-gray-100"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 1.1 }}
+                whileHover={{ scale: 1.03 }}
+              >
+                <div className="text-3xl mb-4">🛡️</div>
+                <h3 className="text-xl font-bold mb-2 text-gray-800">Secure & Fair</h3>
+                <p className="text-gray-600">Every spin is transparent and secured with advanced technology</p>
+              </motion.div>
+              <motion.div 
+                className="bg-white p-6 rounded-lg shadow-md border border-gray-100"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 1.2 }}
+                whileHover={{ scale: 1.03 }}
+              >
+                <div className="text-3xl mb-4">🎁</div>
+                <h3 className="text-xl font-bold mb-2 text-gray-800">Amazing Prizes</h3>
+                <p className="text-gray-600">Win valuable items and exclusive rewards with every spin</p>
+              </motion.div>
+              <motion.div 
+                className="bg-white p-6 rounded-lg shadow-md border border-gray-100"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 1.3 }}
+                whileHover={{ scale: 1.03 }}
+              >
+                <div className="text-3xl mb-4">🚀</div>
+                <h3 className="text-xl font-bold mb-2 text-gray-800">Instant Results</h3>
+                <p className="text-gray-600">No waiting - see your results immediately after each spin</p>
+              </motion.div>
+            </div>
+          </section>
         </div>
       </div>
 
@@ -499,10 +579,10 @@ export default function Home() {
         whileTap={{ scale: 0.9 }}
       >
         <Link
-          href={user ? "/user/lobby" : "/auth/register"}
-          className="bg-red-500 hover:bg-red-600 text-white p-4 rounded-full shadow-2xl flex items-center justify-center text-2xl"
+          href={user ? "/spinner/spinnerlobby" : "/auth/register"}
+          className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white p-5 rounded-full shadow-2xl flex items-center justify-center text-3xl"
         >
-          🎲
+          🎡
         </Link>
       </motion.div>
       <Footer />

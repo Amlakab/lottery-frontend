@@ -79,7 +79,7 @@ const Navbar: React.FC = () => {
                 <Link href="/contact-us" className="hover:underline px-3">
                   Contact Us
                 </Link>
-                <Link href="/auth/login" className="hover:underline px-3">
+                <Link href="/spinner-auth/login" className="hover:underline px-3">
                   Login
                 </Link>
                 <Link href="/spinner-auth/register" className="hover:underline px-3">
