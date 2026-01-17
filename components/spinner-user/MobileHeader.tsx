@@ -54,7 +54,7 @@ export default function MobileHeader({
 
   const handleLogout = () => {
     logout();
-    router.push('/spinner-auth/login');
+    router.push('/auth/login');
   };
 
   return (

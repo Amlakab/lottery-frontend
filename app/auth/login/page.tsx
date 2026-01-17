@@ -44,7 +44,12 @@ export default function LoginPage() {
           autoClose: 2000,
         });
 
-        if (user.role === 'admin') {
+          // Redirect based on user role
+        if (user.role === 'spinner-user') {
+          router.push('/spinner/dashboard');
+        } 
+
+        else if (user.role === 'admin') {
           router.push('/admin');
         } else if (user.role === 'accountant') {
           router.push('/agent');
