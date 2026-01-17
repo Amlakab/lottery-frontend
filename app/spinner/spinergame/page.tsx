@@ -1,8 +1,9 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import api from '@/app/utils/api';
+import { Close as CloseIcon } from '@mui/icons-material';
 
 interface ItemType {
   _id: string;
@@ -34,6 +35,119 @@ export default function SpinnerGame() {
   const [rotation, setRotation] = useState(0);
   const [spinDuration, setSpinDuration] = useState(0);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isSoundPlaying, setIsSoundPlaying] = useState(false);
+
+  // Audio refs for different sounds
+  const gameStartedAudioRef = useRef<HTMLAudioElement | null>(null);
+  const spinnerAudioRef = useRef<HTMLAudioElement | null>(null);
+  const winnerAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Function to play sound effects with better error handling
+  const playSound = (soundType: 'game-started' | 'spinner' | 'won'): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      try {
+        let audioRef = null;
+        let audioPath = '';
+        
+        // Determine which audio file to play
+        if (soundType === 'spinner') {
+          audioPath = '/Audio/game/spinner.m4a';
+          if (!spinnerAudioRef.current) {
+            spinnerAudioRef.current = new Audio(audioPath);
+          }
+          audioRef = spinnerAudioRef.current;
+        } else {
+          audioPath = `/Audio/game/${soundType}.aac`;
+          if (soundType === 'game-started') {
+            if (!gameStartedAudioRef.current) {
+              gameStartedAudioRef.current = new Audio(audioPath);
+            }
+            audioRef = gameStartedAudioRef.current;
+          } else {
+            if (!winnerAudioRef.current) {
+              winnerAudioRef.current = new Audio(audioPath);
+            }
+            audioRef = winnerAudioRef.current;
+          }
+        }
+        
+        if (!audioRef) {
+          reject(new Error(`Audio element not found for ${soundType}`));
+          return;
+        }
+        
+        // Reset audio
+        audioRef.pause();
+        audioRef.currentTime = 0;
+        
+        // Set volume
+        audioRef.volume = 0.7;
+        
+        // Set up event listeners
+        const handleEnded = () => {
+          console.log(`${soundType} sound finished playing`);
+          audioRef?.removeEventListener('ended', handleEnded);
+          audioRef?.removeEventListener('error', handleError);
+          setIsSoundPlaying(false);
+          resolve();
+        };
+        
+        const handleError = (error: Event) => {
+          console.warn(`Failed to play ${soundType} sound:`, error);
+          audioRef?.removeEventListener('ended', handleEnded);
+          audioRef?.removeEventListener('error', handleError);
+          setIsSoundPlaying(false);
+          reject(error);
+        };
+        
+        audioRef.addEventListener('ended', handleEnded);
+        audioRef.addEventListener('error', handleError);
+        
+        // Play with error handling
+        const playPromise = audioRef.play();
+        setIsSoundPlaying(true);
+        console.log(`Playing ${soundType} from: ${audioPath}`);
+        
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.warn(`Initial play failed for ${soundType}:`, error);
+            // Try alternative approach
+            setTimeout(() => {
+              audioRef.play()
+                .then(() => console.log(`Retry succeeded for ${soundType}`))
+                .catch(e => {
+                  console.warn(`Retry failed for ${soundType}:`, e);
+                  handleError(e);
+                });
+            }, 100);
+          });
+        }
+        
+      } catch (error) {
+        console.error(`Error playing ${soundType} sound:`, error);
+        setIsSoundPlaying(false);
+        reject(error);
+      }
+    });
+  };
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (gameStartedAudioRef.current) {
+        gameStartedAudioRef.current.pause();
+        gameStartedAudioRef.current = null;
+      }
+      if (spinnerAudioRef.current) {
+        spinnerAudioRef.current.pause();
+        spinnerAudioRef.current = null;
+      }
+      if (winnerAudioRef.current) {
+        winnerAudioRef.current.pause();
+        winnerAudioRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -83,83 +197,117 @@ export default function SpinnerGame() {
 
   const totalItems = selectedItems.length;
 
-  // Smooth spinner logic
-  const spinWheel = useCallback(() => {
-    if (isSpinning || !user || totalItems === 0) return;
+  // Smooth spinner logic with proper sound timing
+  const spinWheel = useCallback(async () => {
+    if (isSpinning || !user || totalItems === 0 || isSoundPlaying) return;
 
-    setIsSpinning(true);
-    setWinnerItem(null);
-    setShowWinnerModal(false);
-    setIsModalVisible(false);
+    console.log('Spin button clicked - starting sound sequence...');
 
-    const segmentAngle = 360 / totalItems;
-    
-    // Random target item
-    const targetIndex = Math.floor(Math.random() * totalItems);
-    const targetItem = selectedItems[targetIndex];
-    
-    // Calculate the angle for the target segment
-    const targetAngle = targetIndex * segmentAngle + segmentAngle / 2;
-    
-    // Random number of full rotations (15-25 rotations for longer duration)
-    const fullRotations = 15 + Math.floor(Math.random() * 11); // 15-25 rotations
-    
-    // Random duration between 10-20 seconds
-    const totalDuration = 10000 + Math.random() * 10000; // 10,000 to 20,000 ms
-    
-    // Calculate final rotation to land on target segment after all rotations
-    const finalRotation = fullRotations * 360 + (360 - targetAngle);
-    
-    setSpinDuration(Math.round(totalDuration / 1000));
+    // Disable spin button while sound is playing
+    setIsSoundPlaying(true);
 
-    const startTime = Date.now();
-    const startRotation = rotation;
+    try {
+      // Step 1: Play game-started sound and wait for it to finish
+      console.log('Playing game-started sound...');
+      await playSound('game-started');
+      console.log('Game-started sound finished. Starting spin...');
 
-    const animate = () => {
-      const now = Date.now();
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / totalDuration, 1);
+      // Step 2: Start spinning animation
+      setIsSpinning(true);
+      setWinnerItem(null);
+      setShowWinnerModal(false);
+      setIsModalVisible(false);
 
-      // Ultra-smooth easing function for continuous deceleration
-      const smoothEaseOut = 1 - Math.pow(1 - progress, 3);
-
-      // Calculate current rotation
-      const currentRotation = startRotation + (finalRotation * smoothEaseOut);
+      const segmentAngle = 360 / totalItems;
       
-      setRotation(currentRotation);
+      // Random target item
+      const targetIndex = Math.floor(Math.random() * totalItems);
+      const targetItem = selectedItems[targetIndex];
+      
+      // Calculate the angle for the target segment
+      const targetAngle = targetIndex * segmentAngle + segmentAngle / 2;
+      
+      // Random number of full rotations (15-25 rotations for longer duration)
+      const fullRotations = 15 + Math.floor(Math.random() * 11); // 15-25 rotations
+      
+      // Random duration between 10-20 seconds
+      const totalDuration = 10000 + Math.random() * 10000; // 10,000 to 20,000 ms
+      
+      // Calculate final rotation to land on target segment after all rotations
+      const finalRotation = fullRotations * 360 + (360 - targetAngle);
+      
+      setSpinDuration(Math.round(totalDuration / 1000));
 
-      // Determine current item based on arrow (top = 0 deg)
-      const normalizedRotation = currentRotation % 360;
-      const normalized = (360 - normalizedRotation) % 360;
-      const itemIndex = Math.floor(normalized / segmentAngle) % totalItems;
-      setCurrentItemIndex(itemIndex);
+      // Step 3: Start spinner sound when spinning begins
+      playSound('spinner');
 
-      if (progress < 1) {
-        // Continue animation
-        requestAnimationFrame(animate);
-      } else {
-        // Final position calculation
-        const finalNormalized = (360 - (currentRotation % 360)) % 360;
-        const finalIndex = Math.floor(finalNormalized / segmentAngle) % totalItems;
-        const finalWinner = selectedItems[finalIndex];
-        
-        console.log('Target Item:', targetItem.name, 'Actual Winner:', finalWinner.name);
-        
-        setWinnerItem(finalWinner);
-        setCurrentItemIndex(finalIndex);
-        saveGameHistory(finalWinner);
-        setIsSpinning(false);
-        
-        // Show modal with animation
-        setTimeout(() => {
-          setIsModalVisible(true);
-          setTimeout(() => setShowWinnerModal(true), 300);
-        }, 1000);
-      }
-    };
+      const startTime = Date.now();
+      const startRotation = rotation;
 
-    requestAnimationFrame(animate);
-  }, [isSpinning, user, totalItems, selectedItems, rotation]);
+      const animate = () => {
+        const now = Date.now();
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / totalDuration, 1);
+
+        // Ultra-smooth easing function for continuous deceleration
+        const smoothEaseOut = 1 - Math.pow(1 - progress, 3);
+
+        // Calculate current rotation
+        const currentRotation = startRotation + (finalRotation * smoothEaseOut);
+        
+        setRotation(currentRotation);
+
+        // Determine current item based on arrow (top = 0 deg)
+        const normalizedRotation = currentRotation % 360;
+        const normalized = (360 - normalizedRotation) % 360;
+        const itemIndex = Math.floor(normalized / segmentAngle) % totalItems;
+        setCurrentItemIndex(itemIndex);
+
+        if (progress < 1) {
+          // Continue animation
+          requestAnimationFrame(animate);
+        } else {
+          console.log('Spinning ended');
+          
+          // Stop spinner sound when spinning ends
+          if (spinnerAudioRef.current) {
+            spinnerAudioRef.current.pause();
+            spinnerAudioRef.current.currentTime = 0;
+          }
+          
+          // Step 4: Play winner sound when spinning ends
+          setTimeout(() => {
+            playSound('won');
+          }, 500);
+          
+          // Final position calculation
+          const finalNormalized = (360 - (currentRotation % 360)) % 360;
+          const finalIndex = Math.floor(finalNormalized / segmentAngle) % totalItems;
+          const finalWinner = selectedItems[finalIndex];
+          
+          console.log('Winner:', finalWinner.name);
+          
+          setWinnerItem(finalWinner);
+          setCurrentItemIndex(finalIndex);
+          saveGameHistory(finalWinner);
+          setIsSpinning(false);
+          
+          // Show modal with animation
+          setTimeout(() => {
+            setIsModalVisible(true);
+            setTimeout(() => setShowWinnerModal(true), 300);
+          }, 1000);
+        }
+      };
+
+      requestAnimationFrame(animate);
+
+    } catch (error) {
+      console.error('Error in spin sequence:', error);
+      setIsSoundPlaying(false);
+      setIsSpinning(false);
+    }
+  }, [isSpinning, user, totalItems, selectedItems, rotation, isSoundPlaying]);
 
   const saveGameHistory = async (winnerItem: ItemType) => {
     if (!user) return;
@@ -169,7 +317,7 @@ export default function SpinnerGame() {
         winnerItemId: winnerItem._id,
         winnerItemName: winnerItem.name,
         winnerItemPrice: winnerItem.price,
-        totalValue: soldValue, // Use soldValue instead of calculated totalValue
+        totalValue: soldValue,
         numberOfItems: totalItems,
         selectedItems: selectedItems.map(item => item._id)
       });
@@ -317,15 +465,30 @@ export default function SpinnerGame() {
         {/* Spin Button */}
         <button
           onClick={spinWheel}
-          disabled={isSpinning || isLoading}
+          disabled={isSpinning || isLoading || isSoundPlaying}
           className={`w-full max-w-md py-4 text-lg rounded-full font-bold transition-all shadow-lg mb-8 ${
-            isSpinning || isLoading
+            isSpinning || isLoading || isSoundPlaying
               ? 'bg-gray-400 cursor-not-allowed'
               : 'bg-green-500 hover:bg-green-600 text-white'
           }`}
         >
-          {isSpinning ? `Spinning... (${spinDuration}s)` : 'Spin Wheel'}
+          {isSoundPlaying && !isSpinning ? 'Preparing...' : 
+           isSpinning ? `Spinning... (${spinDuration}s)` : 'Spin Wheel'}
         </button>
+
+        {/* Sound Status Indicator */}
+        {/* {isSoundPlaying && !isSpinning && (
+          <div className="mb-4">
+            <div className="inline-flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+              <span className="mr-2">🔊 Playing game sound...</span>
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
+            </div>
+          </div>
+        )} */}
 
         {/* Winner Modal with Enhanced Animation */}
         {showWinnerModal && winnerItem && (
@@ -347,7 +510,22 @@ export default function SpinnerGame() {
                   : 'scale-75 opacity-0 translate-y-10'
               }`}
             >
-              <div className="text-center">
+              {/* X Button at top right - ONLY CLOSES MODAL */}
+              <button
+                onClick={() => {
+                  setIsModalVisible(false);
+                  setTimeout(() => {
+                    setShowWinnerModal(false);
+                    // Does NOT redirect, just closes modal
+                  }, 300);
+                }}
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-200 z-20 bg-white rounded-full p-1 shadow-sm"
+                title="Close"
+              >
+                <CloseIcon className="text-2xl" />
+              </button>
+
+              <div className="text-center pt-2">
                 <div className="text-6xl mb-4 animate-bounce">🎉</div>
                 <h2 className="text-3xl font-bold text-green-600 mb-4 animate-pulse">
                   Winner Item!
@@ -382,34 +560,37 @@ export default function SpinnerGame() {
                   </div>
                 </div>
 
-                {/* Game Stats */}
-                {/* <div className="space-y-3 mb-6">
-                  <div className="flex justify-between text-gray-600">
-                    <span>Total Items:</span>
-                    <span className="font-bold">{totalItems}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Sold Value:</span>
-                    <span className="font-bold">{soldValue} Birr</span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Spin Duration:</span>
-                    <span className="font-bold">{spinDuration} seconds</span>
-                  </div>
-                </div> */}
-
-                <button
-                  onClick={() => {
-                    setIsModalVisible(false);
-                    setTimeout(() => {
-                      setShowWinnerModal(false);
-                      router.push('/spinner/spinnerlobby');
-                    }, 300);
-                  }}
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-lg font-bold hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 shadow-lg"
-                >
-                  Play Again
-                </button>
+                {/* Two buttons: Play Again and Return to Lobby */}
+                <div className="flex flex-col gap-3">
+                  {/* <button
+                    onClick={() => {
+                      setIsModalVisible(false);
+                      setTimeout(() => {
+                        setShowWinnerModal(false);
+                        // Reset game state for another spin
+                        setRotation(0);
+                        setCurrentItemIndex(0);
+                        setWinnerItem(null);
+                      }, 300);
+                    }}
+                    className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 rounded-lg font-bold hover:from-green-700 hover:to-green-800 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                  >
+                    Spin Again
+                  </button> */}
+                  
+                  <button
+                    onClick={() => {
+                      setIsModalVisible(false);
+                      setTimeout(() => {
+                        setShowWinnerModal(false);
+                        router.push('/spinner/spinnerlobby');
+                      }, 300);
+                    }}
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-lg font-bold hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                  >
+                    Return to Lobby
+                  </button>
+                </div>
               </div>
             </div>
           </div>
