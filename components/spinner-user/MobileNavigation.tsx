@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Home, Play, Wallet, History, User } from 'lucide-react';
+import { Home, Play, History, User } from 'lucide-react';
 
 const navigationItems = [
   {
@@ -24,17 +24,11 @@ const navigationItems = [
     href: '/spinner/spinnerlobby',
     icon: Play
   },
-  // {
-  //   name: 'Wallet',
-  //   href: '/spinner/wallet',
-  //   icon: Wallet
-  // },
   {
     name: 'History',
     href: '/spinner/history',
     icon: History
   }
-  
 ];
 
 export default function MobileNavigation() {
@@ -42,7 +36,7 @@ export default function MobileNavigation() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-      <div className="grid grid-cols-5 h-16">
+      <div className="grid grid-cols-4 h-16">
         {navigationItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           const Icon = item.icon;
