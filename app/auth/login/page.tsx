@@ -1,5 +1,6 @@
 'use client';
-
+// Add motion import at the top if not already present
+import { motion } from 'framer-motion';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
@@ -10,9 +11,16 @@ import 'react-toastify/dist/ReactToastify.css';
 import { 
   Eye,
   EyeOff,
-  X
+  Lock,
+  Smartphone,
+  Gift,
+  Shield,
+  Zap,
+  Trophy,
+  Sparkles
 } from 'lucide-react';
 import Footer from '@/components/ui/Footer';
+
 export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -20,7 +28,7 @@ export default function LoginPage() {
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // 👈 state for toggle
+  const [showPassword, setShowPassword] = useState(false);
 
   const { login, loginWithOtp } = useAuth();
   const router = useRouter();
@@ -44,18 +52,16 @@ export default function LoginPage() {
           autoClose: 2000,
         });
 
-          // Redirect based on user role
+        // Redirect based on user role
         if (user.role === 'spinner-user') {
           router.push('/spinner/dashboard');
-        } 
-
-        else if (user.role === 'admin') {
+        } else if (user.role === 'admin') {
           router.push('/admin');
         } else if (user.role === 'accountant') {
           router.push('/agent');
-        }else if (user.role === 'agent') {
+        } else if (user.role === 'agent') {
           router.push('/sub-agent');
-        }  else {
+        } else {
           router.push('/user/dashboard');
         }
       } else {
@@ -108,33 +114,43 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-b from-indigo-50 to-blue-50">
       <Navbar />
       <div className="container mx-auto px-4 py-8 pt-24">
         <div id="login-form" className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-purple-800 mb-4">
-              Welcome to Feta Bingo
-            </h1>
+            <motion.h1 
+              className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              Welcome to Feta Spinner
+            </motion.h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Sign in to your account and join the exciting world of multiplayer
-              bingo games
+              Sign in to your account and experience the thrill of winning with every spin!
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-12 items-start">
             {/* Login Form Card */}
-            <div className="bg-white rounded-lg shadow-lg p-8 border border-gray-100">
-              <h2 className="text-2xl font-semibold text-purple-700 mb-6 text-center">
-                Sign In
+            <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+              <div className="flex items-center justify-center mb-6">
+                <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-3 rounded-full">
+                  <Lock className="h-8 w-8 text-white" />
+                </div>
+              </div>
+              
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+                Sign In to Your Account
               </h2>
 
               {message && (
                 <div
                   className={`mb-6 p-4 rounded-lg ${
                     message.includes('sent') || message.includes('success')
-                      ? 'bg-green-100 text-green-800 border border-green-200'
-                      : 'bg-red-100 text-red-800 border border-red-200'
+                      ? 'bg-green-50 text-green-700 border border-green-200'
+                      : 'bg-red-50 text-red-700 border border-red-200'
                   }`}
                 >
                   {message}
@@ -146,8 +162,9 @@ export default function LoginPage() {
                 <div>
                   <label
                     htmlFor="phone"
-                    className="block text-sm font-medium text-gray-700 mb-2"
+                    className="block text-sm font-medium text-gray-700 mb-2 flex items-center"
                   >
+                    <Smartphone className="h-4 w-4 mr-2" />
                     Phone Number *
                   </label>
                   <input
@@ -155,7 +172,7 @@ export default function LoginPage() {
                     name="phone"
                     type="tel"
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                     placeholder="0912345678"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
@@ -177,7 +194,7 @@ export default function LoginPage() {
                         name="password"
                         type={showPassword ? 'text' : 'password'}
                         required
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200 pr-12"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 pr-12"
                         placeholder="Enter your password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -185,7 +202,7 @@ export default function LoginPage() {
                       <button
                         type="button"
                         onClick={() => setShowPassword((prev) => !prev)}
-                        className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-purple-600"
+                        className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-blue-600 transition-colors"
                       >
                         {showPassword ? (
                           <EyeOff className="h-5 w-5" />
@@ -208,7 +225,7 @@ export default function LoginPage() {
                       name="otp"
                       type="text"
                       required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                       placeholder="Enter 6-digit OTP"
                       value={otp}
                       onChange={(e) => setOtp(e.target.value)}
@@ -220,7 +237,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   {isLoading ? (
                     <span className="flex items-center justify-center">
@@ -241,17 +258,37 @@ export default function LoginPage() {
                         <path
                           className="opacity-75"
                           fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 
-                          3.042 1.135 5.824 3 7.938l3-2.647z"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
                       Signing in...
                     </span>
                   ) : (
-                    'Sign in to Your Account'
+                    <span className="flex items-center justify-center">
+                      <Sparkles className="h-5 w-5 mr-2" />
+                      Start Spinning
+                    </span>
                   )}
                 </button>
               </form>
+
+              {/* Login Methods Toggle */}
+              <div className="mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isOtpLogin) {
+                      setIsOtpLogin(false);
+                    } else {
+                      handleSendOtp();
+                    }
+                  }}
+                  className="w-full text-center text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                  disabled={isLoading}
+                >
+                  {isOtpLogin ? 'Use password instead' : 'Login with OTP'}
+                </button>
+              </div>
 
               {/* Register + Forgot Password */}
               <div className="mt-8 pt-6 border-t border-gray-200">
@@ -259,7 +296,7 @@ export default function LoginPage() {
                   Don't have an account?{' '}
                   <Link
                     href="/auth/register"
-                    className="font-semibold text-purple-600 hover:text-purple-800 transition duration-200"
+                    className="font-semibold text-blue-600 hover:text-blue-800 transition duration-200 hover:underline"
                   >
                     Create account
                   </Link>
@@ -268,114 +305,67 @@ export default function LoginPage() {
               <div className="mt-4 text-center">
                 <Link
                   href="/forgot-password"
-                  className="text-sm text-gray-500 hover:text-gray-700 transition duration-200"
+                  className="text-sm text-gray-500 hover:text-gray-700 transition duration-200 hover:underline"
                 >
                   Forgot your password?
                 </Link>
               </div>
             </div>
 
-            {/* Features Section (unchanged) */}
+            {/* Features Section - Updated for Feta Spinner */}
             <div className="space-y-6">
-              <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-100">
-                <h3 className="text-xl font-semibold text-purple-700 mb-4">
-                  Why Join Feta Bingo?
-                </h3>
+              <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+                <div className="flex items-center mb-6">
+                  <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-2 rounded-lg mr-3">
+                    <Trophy className="h-6 w-6 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800">
+                    Why Choose Feta Spinner?
+                  </h3>
+                </div>
+                
                 <div className="space-y-4">
-                  {/* Multiplayer */}
+                  {/* Exciting Spins */}
                   <div className="flex items-start">
-                    <div className="bg-purple-100 p-2 rounded-lg mr-4">
-                      <svg
-                        className="w-6 h-6 text-purple-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 
-                          20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 
-                          20H2v-2a3 3 0 015.356-1.857M7 
-                          20v-2c0-.656.126-1.283.356-1.857m0 
-                          0a5.002 5.002 0 019.288 0M15 7a3 
-                          3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 
-                          11-4 0 2 2 0 014 0zM7 10a2 2 0 
-                          11-4 0 2 2 0 014 0z"
-                        />
-                      </svg>
+                    <div className="bg-gradient-to-r from-blue-100 to-purple-100 p-2 rounded-lg mr-4">
+                      <Zap className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
                       <h4 className="font-semibold text-gray-800">
-                        Multiplayer Experience
+                        Exciting Spins
                       </h4>
-                      <p className="text-sm text-gray-600">
-                        Play with real players in exciting real-time bingo games
+                      <p className="text-sm text-gray-600 mt-1">
+                        Experience the thrill of spinning and winning amazing prizes every time
                       </p>
                     </div>
                   </div>
 
-                  {/* Rewards */}
+                  {/* Valuable Rewards */}
                   <div className="flex items-start">
-                    <div className="bg-blue-100 p-2 rounded-lg mr-4">
-                      <svg
-                        className="w-6 h-6 text-blue-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8c-1.657 0-3 .895-3 
-                          2s1.343 2 3 2 3 .895 3 2-1.343 
-                          2-3 2m0-8c1.11 0 2.08.402 
-                          2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 
-                          0-2.08-.402-2.599-1M21 12a9 9 0 
-                          11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
+                    <div className="bg-gradient-to-r from-green-100 to-emerald-100 p-2 rounded-lg mr-4">
+                      <Gift className="w-5 h-5 text-green-600" />
                     </div>
                     <div>
                       <h4 className="font-semibold text-gray-800">
-                        Instant Rewards
+                        Valuable Rewards
                       </h4>
-                      <p className="text-sm text-gray-600">
-                        Win real prizes and enjoy instant withdrawals
+                      <p className="text-sm text-gray-600 mt-1">
+                        Win real items and instant prizes with every successful spin
                       </p>
                     </div>
                   </div>
 
-                  {/* Security */}
+                  {/* Secure Platform */}
                   <div className="flex items-start">
-                    <div className="bg-green-100 p-2 rounded-lg mr-4">
-                      <svg
-                        className="w-6 h-6 text-green-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m5.618-4.016A11.955 
-                          11.955 0 0112 2.944a11.955 
-                          11.955 0 01-8.618 3.04A12.02 
-                          12.02 0 003 9c0 5.591 3.824 
-                          10.29 9 11.622 5.176-1.332 
-                          9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                        />
-                      </svg>
+                    <div className="bg-gradient-to-r from-orange-100 to-red-100 p-2 rounded-lg mr-4">
+                      <Shield className="w-5 h-5 text-orange-600" />
                     </div>
                     <div>
                       <h4 className="font-semibold text-gray-800">
                         Secure Platform
                       </h4>
-                      <p className="text-sm text-gray-600">
-                        Your data and transactions are protected with encryption
+                      <p className="text-sm text-gray-600 mt-1">
+                        Your spins and winnings are protected with advanced security measures
                       </p>
                     </div>
                   </div>
@@ -383,25 +373,43 @@ export default function LoginPage() {
               </div>
 
               {/* Quick Access */}
-              <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-100">
-                <h3 className="text-xl font-semibold text-purple-700 mb-4">
+              <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">
                   Quick Access
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
                   <Link
-                    href="#login-form"
-                    className="bg-purple-50 hover:bg-purple-100 text-purple-700 text-center py-3 rounded-lg transition duration-200"
+                    href="/spinner/spinnerlobby"
+                    className="bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 text-blue-700 p-4 rounded-xl text-center transition-all duration-200 transform hover:-translate-y-1"
                   >
-                    <div className="font-semibold">Play Now</div>
-                    <div className="text-xs">Join a Game</div>
+                    <div className="font-bold text-lg mb-1">🎡</div>
+                    <div className="font-semibold">Spin Now</div>
+                    <div className="text-xs mt-1">Start Spinning</div>
                   </Link>
                   <Link
                     href="/howtoplay"
-                    className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-center py-3 rounded-lg transition duration-200"
+                    className="bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 text-purple-700 p-4 rounded-xl text-center transition-all duration-200 transform hover:-translate-y-1"
                   >
+                    <div className="font-bold text-lg mb-1">📚</div>
                     <div className="font-semibold">Learn</div>
-                    <div className="text-xs">How to Play</div>
+                    <div className="text-xs mt-1">How to Play</div>
                   </Link>
+                </div>
+              </div>
+
+              {/* Daily Winners */}
+              <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
+                <div className="flex items-center mb-4">
+                  <Trophy className="h-6 w-6 mr-2" />
+                  <h3 className="text-xl font-bold">Daily Winners</h3>
+                </div>
+                <p className="text-sm opacity-90 mb-4">
+                  Join thousands of players who win amazing prizes every day!
+                </p>
+                <div className="flex justify-center">
+                  <div className="bg-white/20 p-3 rounded-full">
+                    <span className="text-2xl">🎉</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -413,14 +421,14 @@ export default function LoginPage() {
               By signing in, you agree to our{' '}
               <Link
                 href="/termsofservice"
-                className="text-purple-600 hover:underline"
+                className="text-blue-600 hover:underline"
               >
                 Terms of Service
               </Link>{' '}
               and{' '}
               <Link
                 href="/privacypolicy"
-                className="text-purple-600 hover:underline"
+                className="text-blue-600 hover:underline"
               >
                 Privacy Policy
               </Link>
@@ -432,3 +440,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
