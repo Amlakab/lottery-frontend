@@ -25,6 +25,7 @@ export default function SpinnerGame() {
   const [loading, setLoading] = useState(true);
 
   const [selectedItems, setSelectedItems] = useState<ItemType[]>([]);
+  const [soldValue, setSoldValue] = useState<number>(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [winnerItem, setWinnerItem] = useState<ItemType | null>(null);
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
@@ -63,8 +64,10 @@ export default function SpinnerGame() {
 
     fetchUser();
 
-    // Get selected items from sessionStorage
+    // Get selected items and sold value from sessionStorage
     const storedItems = sessionStorage.getItem('selectedItems');
+    const storedSoldValue = sessionStorage.getItem('soldValue');
+    
     if (storedItems) {
       const items = JSON.parse(storedItems);
       setSelectedItems(items);
@@ -72,9 +75,12 @@ export default function SpinnerGame() {
     } else {
       router.push('/spinner/spinnerlobby');
     }
+
+    if (storedSoldValue) {
+      setSoldValue(parseInt(storedSoldValue) || 0);
+    }
   }, [router]);
 
-  const totalValue = selectedItems.reduce((sum, item) => sum + item.price, 0);
   const totalItems = selectedItems.length;
 
   // Smooth spinner logic
@@ -163,7 +169,7 @@ export default function SpinnerGame() {
         winnerItemId: winnerItem._id,
         winnerItemName: winnerItem.name,
         winnerItemPrice: winnerItem.price,
-        totalValue,
+        totalValue: soldValue, // Use soldValue instead of calculated totalValue
         numberOfItems: totalItems,
         selectedItems: selectedItems.map(item => item._id)
       });
@@ -213,11 +219,11 @@ export default function SpinnerGame() {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-2xl mx-auto text-center">
-        {/* Total Value Display */}
+        {/* Sold Value Display */}
         <div className="mb-6 flex justify-center">
           <div className="bg-yellow-500 rounded-full w-24 h-24 flex flex-col items-center justify-center shadow-lg border-4 border-white">
-            <div className="text-white text-xs font-bold">Total Value</div>
-            <div className="text-white text-lg font-bold">{totalValue}Birr</div>
+            <div className="text-white text-xs font-bold">Sold Value</div>
+            <div className="text-white text-lg font-bold">{soldValue} Birr</div>
           </div>
         </div>
 
@@ -377,20 +383,20 @@ export default function SpinnerGame() {
                 </div>
 
                 {/* Game Stats */}
-                {/* <div className="space-y-3 mb-6">
+                <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-gray-600">
                     <span>Total Items:</span>
                     <span className="font-bold">{totalItems}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
-                    <span>Total Value:</span>
-                    <span className="font-bold">{totalValue} Birr</span>
+                    <span>Sold Value:</span>
+                    <span className="font-bold">{soldValue} Birr</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Spin Duration:</span>
                     <span className="font-bold">{spinDuration} seconds</span>
                   </div>
-                </div> */}
+                </div>
 
                 <button
                   onClick={() => {

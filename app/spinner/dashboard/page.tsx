@@ -322,7 +322,7 @@ export default function UserDashboard() {
                           <p className="text-sm text-gray-600 truncate">
                             Winner: #{((activity.data as SpinnerHistoryType).winnerNumber)} • 
                             Players: {((activity.data as SpinnerHistoryType).numberOfPlayers)} • 
-                            Cards: {((activity.data as SpinnerHistoryType).selectedNumbers.length)}
+                            {/* Cards: {((activity.data as SpinnerHistoryType).selectedNumbers.length)} */}
                           </p>
                           <p className="text-xs text-gray-400">{formatDateString(activity.date)}</p>
                         </div>

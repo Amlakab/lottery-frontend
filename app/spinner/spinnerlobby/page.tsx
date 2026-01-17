@@ -25,6 +25,7 @@ export default function SpinnerLobby() {
   const [user, setUser] = useState<UserType | null>(null);
   const [items, setItems] = useState<ItemType[]>([]);
   const [selectedItems, setSelectedItems] = useState<ItemType[]>([]);
+  const [soldValue, setSoldValue] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -74,6 +75,24 @@ export default function SpinnerLobby() {
           })
         );
         setItems(itemsData);
+
+        // Load saved data from localStorage
+        const savedSoldValue = localStorage.getItem('spinnerSoldValue');
+        if (savedSoldValue) {
+          setSoldValue(parseInt(savedSoldValue) || 0);
+        }
+
+        const savedSelectedItems = localStorage.getItem('spinnerSelectedItems');
+        if (savedSelectedItems) {
+          const parsedItems = JSON.parse(savedSelectedItems);
+          // We need to match the saved items with the fetched items by _id
+          const matchedItems = parsedItems
+            .map((savedItem: any) => 
+              itemsData.find((item: ItemType) => item._id === savedItem._id)
+            )
+            .filter((item: ItemType | undefined) => item !== undefined);
+          setSelectedItems(matchedItems);
+        }
       } catch (err) {
         console.error('Failed to fetch data:', err);
         router.push('/auth/login');
@@ -86,28 +105,45 @@ export default function SpinnerLobby() {
   }, [router]);
 
   const toggleItemSelection = (item: ItemType) => {
+    let newSelectedItems;
     const isSelected = selectedItems.some(selected => selected._id === item._id);
     
     if (isSelected) {
       // Remove from selection
-      setSelectedItems(selectedItems.filter(selected => selected._id !== item._id));
+      newSelectedItems = selectedItems.filter(selected => selected._id !== item._id);
     } else {
       // Add to selection
-      setSelectedItems([...selectedItems, item]);
+      newSelectedItems = [...selectedItems, item];
     }
+    
+    setSelectedItems(newSelectedItems);
+    
+    // Save to localStorage
+    localStorage.setItem('spinnerSelectedItems', JSON.stringify(newSelectedItems));
+  };
+
+  const handleSoldValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value) || 0;
+    setSoldValue(value);
+    localStorage.setItem('spinnerSoldValue', value.toString());
   };
 
   const totalItems = items.length;
-  const totalValue = selectedItems.reduce((sum, item) => sum + item.price, 0);
-  const canStartGame = selectedItems.length >= 2;
+  const canStartGame = selectedItems.length >= 2 && soldValue > 0;
 
   const startGame = () => {
     if (!canStartGame || !user) return;
     
-    // Store selected items in sessionStorage for game page
+    // Store selected items and sold value in sessionStorage for game page
     sessionStorage.setItem('selectedItems', JSON.stringify(selectedItems));
+    sessionStorage.setItem('soldValue', soldValue.toString());
     
     router.push('/spinner/spinergame');
+  };
+
+  const clearAllSelections = () => {
+    setSelectedItems([]);
+    localStorage.removeItem('spinnerSelectedItems');
   };
 
   if (loading) {
@@ -139,6 +175,31 @@ export default function SpinnerLobby() {
       <MobileHeader title="Spinner Lobby" />
 
       <main className="px-4 pb-24 pt-16 w-full max-w-full mx-auto overflow-x-hidden">
+        {/* Sold Value Input */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ delay: 0.2 }}
+          className="w-full mb-6"
+        >
+          <div className="bg-white p-4 rounded-lg shadow-md">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Sold Value (Birr)
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={soldValue}
+              onChange={handleSoldValueChange}
+              className="w-full px-4 py-2 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+              placeholder="Enter sold value"
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              This value will be used as the total value for the spinner game
+            </p>
+          </div>
+        </motion.div>
+        
         {/* Stats Cards */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }} 
@@ -147,15 +208,19 @@ export default function SpinnerLobby() {
           className="grid grid-cols-2 gap-4 w-full mb-6"
         >
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-lg text-center">
-            <div className="text-sm opacity-90">Selected</div>
+            <div className="text-sm opacity-90">Selected Items</div>
             <div className="text-2xl font-bold">{selectedItems.length}/{totalItems}</div>
           </div>
           
           <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-lg text-center">
-            <div className="text-sm opacity-90">Total Value</div>
-            <div className="text-2xl font-bold">{totalValue}Birr</div>
+            <div className="text-sm opacity-90">Total Items Value</div>
+            <div className="text-2xl font-bold">
+              {selectedItems.reduce((sum, item) => sum + item.price, 0)} Birr
+            </div>
           </div>
         </motion.div>
+
+        
 
         {/* Items Grid */}
         <motion.div 
@@ -229,7 +294,7 @@ export default function SpinnerLobby() {
           className="flex justify-center gap-3 w-full"
         >
           <button
-            onClick={() => setSelectedItems([])}
+            onClick={clearAllSelections}
             disabled={selectedItems.length === 0}
             className={`px-6 py-3 rounded-lg transition-colors text-sm font-medium ${
               selectedItems.length === 0
@@ -249,7 +314,11 @@ export default function SpinnerLobby() {
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            {canStartGame ? `Start Game (${selectedItems.length} items)` : 'Select at least 2 items'}
+            {canStartGame 
+              ? `Start Game (${selectedItems.length} items, ${soldValue} Birr)` 
+              : selectedItems.length < 2 
+                ? 'Select at least 2 items' 
+                : 'Enter sold value'}
           </button>
         </motion.div>
       </main>

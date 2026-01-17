@@ -15,25 +15,26 @@ const navigationItems = [
     icon: Home
   },
   {
+    name: 'Items',
+    href: '/spinner/profile',
+    icon: User
+  },
+  {
     name: 'Play',
     href: '/spinner/spinnerlobby',
     icon: Play
   },
-  {
-    name: 'Wallet',
-    href: '/spinner/wallet',
-    icon: Wallet
-  },
+  // {
+  //   name: 'Wallet',
+  //   href: '/spinner/wallet',
+  //   icon: Wallet
+  // },
   {
     name: 'History',
     href: '/spinner/history',
     icon: History
-  },
-  {
-    name: 'Profile',
-    href: '/spinner/profile',
-    icon: User
   }
+  
 ];
 
 export default function MobileNavigation() {
