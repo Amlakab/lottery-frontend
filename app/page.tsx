@@ -343,7 +343,7 @@ export default function Home() {
                     Get Started Free
                   </Link>
                   <Link
-                    href="/spinner-auth/login"
+                    href="/auth/login"
                     className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
                     Login to Play
