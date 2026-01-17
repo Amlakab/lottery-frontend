@@ -220,7 +220,7 @@ export default function SpinnerGame() {
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-2xl mx-auto text-center">
         {/* Sold Value Display */}
-        <div className="mb-6 flex justify-center">
+        <div className="mb-2 flex justify-center">
           <div className="bg-yellow-500 rounded-full w-24 h-24 flex flex-col items-center justify-center shadow-lg border-4 border-white">
             <div className="text-white text-xs font-bold">Sold Value</div>
             <div className="text-white text-lg font-bold">{soldValue} Birr</div>
@@ -383,7 +383,7 @@ export default function SpinnerGame() {
                 </div>
 
                 {/* Game Stats */}
-                <div className="space-y-3 mb-6">
+                {/* <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-gray-600">
                     <span>Total Items:</span>
                     <span className="font-bold">{totalItems}</span>
@@ -396,7 +396,7 @@ export default function SpinnerGame() {
                     <span>Spin Duration:</span>
                     <span className="font-bold">{spinDuration} seconds</span>
                   </div>
-                </div>
+                </div> */}
 
                 <button
                   onClick={() => {
