@@ -510,83 +510,84 @@ export default function SpinnerPage() {
     });
   }, []);
 
-  const spinWheel = useCallback(async () => {
-    if (isSpinning || !user || gameItems.length === 0 || isSoundPlaying) return;
+ const spinWheel = useCallback(async () => {
+  if (isSpinning || !user || gameItems.length === 0 || isSoundPlaying) return;
 
-    setIsSoundPlaying(true);
+  setIsSoundPlaying(true);
 
-    try {
-      await playSound('game-started');
+  try {
+    await playSound('game-started');
 
-      setIsSpinning(true);
-      setWinnerItem(null);
-      setShowWinnerModal(false);
-      setIsModalVisible(false);
+    setIsSpinning(true);
+    setWinnerItem(null);
+    setShowWinnerModal(false);
+    setIsModalVisible(false);
 
-      const segmentAngle = 360 / gameItems.length;
-      const targetIndex = Math.floor(Math.random() * gameItems.length);
-      const targetItem = gameItems[targetIndex];
-      const targetAngle = targetIndex * segmentAngle + segmentAngle / 2;
-      const fullRotations = 15 + Math.floor(Math.random() * 11);
-      const totalDuration = 10000 + Math.random() * 10000;
-      const finalRotation = fullRotations * 360 + (360 - targetAngle);
+    const segmentAngle = 360 / gameItems.length;
+    const targetIndex = Math.floor(Math.random() * gameItems.length);
+    const targetItem = gameItems[targetIndex];
+    const targetAngle = targetIndex * segmentAngle + segmentAngle / 2;
+    const fullRotations = 15 + Math.floor(Math.random() * 11);
+    // Change duration from 10-20 seconds to 5-13 seconds
+    const totalDuration = 5000 + Math.random() * 8000; // 5000ms (5s) to 13000ms (13s)
+    const finalRotation = fullRotations * 360 + (360 - targetAngle);
+    
+    setSpinDuration(Math.round(totalDuration / 1000));
+    playSound('spinner');
+
+    const startTime = Date.now();
+    const startRotation = rotation;
+
+    const animate = () => {
+      const now = Date.now();
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / totalDuration, 1);
+      const smoothEaseOut = 1 - Math.pow(1 - progress, 3);
+      const currentRotation = startRotation + (finalRotation * smoothEaseOut);
       
-      setSpinDuration(Math.round(totalDuration / 1000));
-      playSound('spinner');
+      setRotation(currentRotation);
 
-      const startTime = Date.now();
-      const startRotation = rotation;
+      const normalizedRotation = currentRotation % 360;
+      const normalized = (360 - normalizedRotation) % 360;
+      const itemIndex = Math.floor(normalized / segmentAngle) % gameItems.length;
+      setCurrentItemIndex(itemIndex);
 
-      const animate = () => {
-        const now = Date.now();
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / totalDuration, 1);
-        const smoothEaseOut = 1 - Math.pow(1 - progress, 3);
-        const currentRotation = startRotation + (finalRotation * smoothEaseOut);
-        
-        setRotation(currentRotation);
-
-        const normalizedRotation = currentRotation % 360;
-        const normalized = (360 - normalizedRotation) % 360;
-        const itemIndex = Math.floor(normalized / segmentAngle) % gameItems.length;
-        setCurrentItemIndex(itemIndex);
-
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          if (spinnerAudioRef.current) {
-            spinnerAudioRef.current.pause();
-            spinnerAudioRef.current.currentTime = 0;
-          }
-          
-          setTimeout(() => {
-            playSound('won');
-          }, 500);
-          
-          const finalNormalized = (360 - (currentRotation % 360)) % 360;
-          const finalIndex = Math.floor(finalNormalized / segmentAngle) % gameItems.length;
-          const finalWinner = gameItems[finalIndex];
-          
-          setWinnerItem(finalWinner);
-          setCurrentItemIndex(finalIndex);
-          saveGameHistory(finalWinner);
-          setIsSpinning(false);
-          
-          setTimeout(() => {
-            setIsModalVisible(true);
-            setTimeout(() => setShowWinnerModal(true), 300);
-          }, 1000);
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        if (spinnerAudioRef.current) {
+          spinnerAudioRef.current.pause();
+          spinnerAudioRef.current.currentTime = 0;
         }
-      };
+        
+        setTimeout(() => {
+          playSound('won');
+        }, 500);
+        
+        const finalNormalized = (360 - (currentRotation % 360)) % 360;
+        const finalIndex = Math.floor(finalNormalized / segmentAngle) % gameItems.length;
+        const finalWinner = gameItems[finalIndex];
+        
+        setWinnerItem(finalWinner);
+        setCurrentItemIndex(finalIndex);
+        saveGameHistory(finalWinner);
+        setIsSpinning(false);
+        
+        setTimeout(() => {
+          setIsModalVisible(true);
+          setTimeout(() => setShowWinnerModal(true), 300);
+        }, 1000);
+      }
+    };
 
-      requestAnimationFrame(animate);
+    requestAnimationFrame(animate);
 
-    } catch (error) {
-      console.error('Error in spin sequence:', error);
-      setIsSoundPlaying(false);
-      setIsSpinning(false);
-    }
-  }, [isSpinning, user, gameItems, rotation, isSoundPlaying, playSound]);
+  } catch (error) {
+    console.error('Error in spin sequence:', error);
+    setIsSoundPlaying(false);
+    setIsSpinning(false);
+  }
+}, [isSpinning, user, gameItems, rotation, isSoundPlaying, playSound]);
 
   const saveGameHistory = useCallback(async (winnerItem: ItemType) => {
     if (!user) return;
