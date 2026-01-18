@@ -528,7 +528,11 @@ export default function SpinnerPage() {
     const targetItem = gameItems[targetIndex];
     const targetAngle = targetIndex * segmentAngle + segmentAngle / 2;
     const fullRotations = 15 + Math.floor(Math.random() * 11);
+    
     // Change duration from 10-20 seconds to 5-13 seconds
+    // From: 10000 + Math.random() * 10000 (10-20 seconds)
+
+   // To: 5000 + Math.random() * 8000 (5-13 seconds)
     const totalDuration = 5000 + Math.random() * 8000; // 5000ms (5s) to 13000ms (13s)
     const finalRotation = fullRotations * 360 + (360 - targetAngle);
     
