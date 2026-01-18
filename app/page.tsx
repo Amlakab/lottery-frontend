@@ -340,13 +340,13 @@ export default function Home() {
                     href="/auth/register"
                     className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
-                    Get Started Free
+                    Get Started
                   </Link>
                   <Link
                     href="/auth/login"
                     className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
-                    Login to Play
+                    Login
                   </Link>
                 </div>
               )}

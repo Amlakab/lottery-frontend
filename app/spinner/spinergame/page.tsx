@@ -19,6 +19,9 @@ interface UserType {
   wallet: number;
 }
 
+// Global image cache
+const imageCache = new Map<string, string>();
+
 export default function SpinnerGame() {
   const router = useRouter();
   const { logout } = useAuth();
@@ -42,14 +45,117 @@ export default function SpinnerGame() {
   const spinnerAudioRef = useRef<HTMLAudioElement | null>(null);
   const winnerAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Function to play sound effects with better error handling
+  // Optimized function to fetch ALL images fast
+  const fetchAllImagesFast = useCallback(async (items: ItemType[]): Promise<ItemType[]> => {
+    if (items.length === 0) return items;
+    
+    console.log(`Starting fast image fetch for ${items.length} items...`);
+    
+    // Step 1: Get unique original IDs
+    const uniqueIds = Array.from(
+      new Set(items.map(item => item._id.split('_')[0]))
+    );
+    
+    console.log(`Unique items to fetch: ${uniqueIds.length}`);
+    
+    // Step 2: Check cache first
+    const cachedIds: string[] = [];
+    const uncachedIds: string[] = [];
+    
+    uniqueIds.forEach(id => {
+      if (imageCache.has(id)) {
+        cachedIds.push(id);
+      } else {
+        uncachedIds.push(id);
+      }
+    });
+    
+    console.log(`Cached: ${cachedIds.length}, Need to fetch: ${uncachedIds.length}`);
+    
+    // Step 3: Fetch uncached images in parallel with concurrency limit
+    if (uncachedIds.length > 0) {
+      const concurrencyLimit = 10; // Fetch 10 images at once
+      const batches = [];
+      
+      for (let i = 0; i < uncachedIds.length; i += concurrencyLimit) {
+        batches.push(uncachedIds.slice(i, i + concurrencyLimit));
+      }
+      
+      console.log(`Fetching in ${batches.length} batches...`);
+      
+      // Process all batches
+      const batchPromises = batches.map(async (batch, batchIndex) => {
+        console.log(`Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} items)`);
+        
+        const batchResults = await Promise.allSettled(
+          batch.map(async (itemId) => {
+            try {
+              const imageResponse = await api.get(`/items/${itemId}/image`, {
+                responseType: 'arraybuffer'
+              });
+              
+              // Convert to base64 (fastest for display)
+              const bytes = new Uint8Array(imageResponse.data);
+              let binary = '';
+              
+              // Fast conversion using TypedArray reduce
+              const chunkSize = 32768; // Larger chunks for speed
+              for (let i = 0; i < bytes.length; i += chunkSize) {
+                const chunk = bytes.slice(i, i + chunkSize);
+                binary += String.fromCharCode.apply(null, Array.from(chunk));
+              }
+              
+              const base64 = btoa(binary);
+              const imageUrl = `data:image/jpeg;base64,${base64}`;
+              
+              imageCache.set(itemId, imageUrl);
+              return { itemId, imageUrl, success: true };
+            } catch (error) {
+              console.warn(`Failed to fetch image for ${itemId}:`, error);
+              return { itemId, imageUrl: null, success: false };
+            }
+          })
+        );
+        
+        // Small delay between batches to prevent overwhelming
+        if (batchIndex < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+        
+        return batchResults;
+      });
+      
+      // Wait for ALL batches to complete
+      const allBatchResults = await Promise.all(batchPromises);
+      console.log('All image batches completed');
+    }
+    
+    // Step 4: Map images back to all items (including duplicates)
+    const itemsWithImages = items.map(item => {
+      const originalId = item._id.split('_')[0];
+      const cachedImage = imageCache.get(originalId);
+      
+      if (cachedImage) {
+        return { ...item, image: cachedImage };
+      }
+      
+      // If no image in cache, return item without image
+      return item;
+    });
+    
+    const loadedCount = itemsWithImages.filter(item => item.image).length;
+    console.log(`Image loading complete: ${loadedCount}/${items.length} items have images`);
+    
+    return itemsWithImages;
+  }, []);
+
+  // Function to play sound effects
   const playSound = (soundType: 'game-started' | 'spinner' | 'won'): Promise<void> => {
     return new Promise((resolve, reject) => {
       try {
         let audioRef = null;
         let audioPath = '';
         
-        // Determine which audio file to play
         if (soundType === 'spinner') {
           audioPath = '/Audio/game/spinner.m4a';
           if (!spinnerAudioRef.current) {
@@ -76,16 +182,11 @@ export default function SpinnerGame() {
           return;
         }
         
-        // Reset audio
         audioRef.pause();
         audioRef.currentTime = 0;
-        
-        // Set volume
         audioRef.volume = 0.7;
         
-        // Set up event listeners
         const handleEnded = () => {
-          console.log(`${soundType} sound finished playing`);
           audioRef?.removeEventListener('ended', handleEnded);
           audioRef?.removeEventListener('error', handleError);
           setIsSoundPlaying(false);
@@ -103,22 +204,13 @@ export default function SpinnerGame() {
         audioRef.addEventListener('ended', handleEnded);
         audioRef.addEventListener('error', handleError);
         
-        // Play with error handling
         const playPromise = audioRef.play();
         setIsSoundPlaying(true);
-        console.log(`Playing ${soundType} from: ${audioPath}`);
         
         if (playPromise !== undefined) {
           playPromise.catch(error => {
-            console.warn(`Initial play failed for ${soundType}:`, error);
-            // Try alternative approach
             setTimeout(() => {
-              audioRef.play()
-                .then(() => console.log(`Retry succeeded for ${soundType}`))
-                .catch(e => {
-                  console.warn(`Retry failed for ${soundType}:`, e);
-                  handleError(e);
-                });
+              audioRef.play().catch(e => handleError(e));
             }, 100);
           });
         }
@@ -150,9 +242,11 @@ export default function SpinnerGame() {
   }, []);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const initializeGame = async () => {
       if (typeof window === 'undefined') return;
+      
       try {
+        // Fetch user
         const storedUser = localStorage.getItem('user');
         if (!storedUser) {
           router.push('/auth/login');
@@ -168,51 +262,57 @@ export default function SpinnerGame() {
         const response = await api.get(`/user/${parsedUser._id}`);
         const userData: UserType = response.data;
         setUser(userData);
+
+        // Get game data from sessionStorage
+        const gameDataStr = sessionStorage.getItem('spinnerGameData');
+        if (!gameDataStr) {
+          router.push('/spinner/spinnerlobby');
+          return;
+        }
+
+        const gameData = JSON.parse(gameDataStr);
+        const itemsWithoutImages = gameData.selectedItems || [];
+        setSoldValue(gameData.soldValue || 0);
+        
+        if (itemsWithoutImages.length === 0) {
+          setSelectedItems([]);
+          setLoading(false);
+          return;
+        }
+        
+        console.log('Starting game initialization with', itemsWithoutImages.length, 'items');
+        console.time('imageLoading');
+        
+        // FETCH ALL IMAGES FIRST
+        const itemsWithImages = await fetchAllImagesFast(itemsWithoutImages);
+        console.timeEnd('imageLoading');
+        
+        console.log('Images loaded, setting items...');
+        setSelectedItems(itemsWithImages);
+        setCurrentItemIndex(0);
+        
       } catch (err) {
-        console.error('Failed to fetch user:', err);
+        console.error('Failed to initialize game:', err);
         router.push('/auth/login');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUser();
-
-    // Get selected items and sold value from sessionStorage
-    const storedItems = sessionStorage.getItem('selectedItems');
-    const storedSoldValue = sessionStorage.getItem('soldValue');
-    
-    if (storedItems) {
-      const items = JSON.parse(storedItems);
-      setSelectedItems(items);
-      setCurrentItemIndex(0);
-    } else {
-      router.push('/spinner/spinnerlobby');
-    }
-
-    if (storedSoldValue) {
-      setSoldValue(parseInt(storedSoldValue) || 0);
-    }
-  }, [router]);
+    initializeGame();
+  }, [router, fetchAllImagesFast]);
 
   const totalItems = selectedItems.length;
 
-  // Smooth spinner logic with proper sound timing
+  // Smooth spinner logic
   const spinWheel = useCallback(async () => {
     if (isSpinning || !user || totalItems === 0 || isSoundPlaying) return;
 
-    console.log('Spin button clicked - starting sound sequence...');
-
-    // Disable spin button while sound is playing
     setIsSoundPlaying(true);
 
     try {
-      // Step 1: Play game-started sound and wait for it to finish
-      console.log('Playing game-started sound...');
       await playSound('game-started');
-      console.log('Game-started sound finished. Starting spin...');
 
-      // Step 2: Start spinning animation
       setIsSpinning(true);
       setWinnerItem(null);
       setShowWinnerModal(false);
@@ -224,21 +324,12 @@ export default function SpinnerGame() {
       const targetIndex = Math.floor(Math.random() * totalItems);
       const targetItem = selectedItems[targetIndex];
       
-      // Calculate the angle for the target segment
       const targetAngle = targetIndex * segmentAngle + segmentAngle / 2;
-      
-      // Random number of full rotations (15-25 rotations for longer duration)
-      const fullRotations = 15 + Math.floor(Math.random() * 11); // 15-25 rotations
-      
-      // Random duration between 10-20 seconds
-      const totalDuration = 10000 + Math.random() * 10000; // 10,000 to 20,000 ms
-      
-      // Calculate final rotation to land on target segment after all rotations
+      const fullRotations = 15 + Math.floor(Math.random() * 11);
+      const totalDuration = 10000 + Math.random() * 10000;
       const finalRotation = fullRotations * 360 + (360 - targetAngle);
       
       setSpinDuration(Math.round(totalDuration / 1000));
-
-      // Step 3: Start spinner sound when spinning begins
       playSound('spinner');
 
       const startTime = Date.now();
@@ -248,51 +339,37 @@ export default function SpinnerGame() {
         const now = Date.now();
         const elapsed = now - startTime;
         const progress = Math.min(elapsed / totalDuration, 1);
-
-        // Ultra-smooth easing function for continuous deceleration
         const smoothEaseOut = 1 - Math.pow(1 - progress, 3);
-
-        // Calculate current rotation
         const currentRotation = startRotation + (finalRotation * smoothEaseOut);
         
         setRotation(currentRotation);
 
-        // Determine current item based on arrow (top = 0 deg)
         const normalizedRotation = currentRotation % 360;
         const normalized = (360 - normalizedRotation) % 360;
         const itemIndex = Math.floor(normalized / segmentAngle) % totalItems;
         setCurrentItemIndex(itemIndex);
 
         if (progress < 1) {
-          // Continue animation
           requestAnimationFrame(animate);
         } else {
-          console.log('Spinning ended');
-          
-          // Stop spinner sound when spinning ends
           if (spinnerAudioRef.current) {
             spinnerAudioRef.current.pause();
             spinnerAudioRef.current.currentTime = 0;
           }
           
-          // Step 4: Play winner sound when spinning ends
           setTimeout(() => {
             playSound('won');
           }, 500);
           
-          // Final position calculation
           const finalNormalized = (360 - (currentRotation % 360)) % 360;
           const finalIndex = Math.floor(finalNormalized / segmentAngle) % totalItems;
           const finalWinner = selectedItems[finalIndex];
-          
-          console.log('Winner:', finalWinner.name);
           
           setWinnerItem(finalWinner);
           setCurrentItemIndex(finalIndex);
           saveGameHistory(finalWinner);
           setIsSpinning(false);
           
-          // Show modal with animation
           setTimeout(() => {
             setIsModalVisible(true);
             setTimeout(() => setShowWinnerModal(true), 300);
@@ -313,21 +390,21 @@ export default function SpinnerGame() {
     if (!user) return;
     setIsLoading(true);
     try {
-      const historyResponse = await api.post('/spinner/history', {
-        winnerItemId: winnerItem._id,
+      const originalId = winnerItem._id.split('_')[0];
+      
+      await api.post('/spinner/history', {
+        winnerItemId: originalId,
         winnerItemName: winnerItem.name,
         winnerItemPrice: winnerItem.price,
         totalValue: soldValue,
         numberOfItems: totalItems,
-        selectedItems: selectedItems.map(item => item._id)
+        selectedItems: []
       });
 
-      if (historyResponse.data) {
-        const response = await api.get(`/user/${user._id}`);
-        const userData: UserType = response.data;
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
-      }
+      const response = await api.get(`/user/${user._id}`);
+      const userData: UserType = response.data;
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
     } catch (error: any) {
       console.error('Failed to save game history:', error);
     } finally {
@@ -346,16 +423,26 @@ export default function SpinnerGame() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-800 text-xl">Loading game...</div>
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mb-4"></div>
+        <div className="text-gray-600 text-lg">Loading game images...</div>
+        <div className="text-gray-500 text-sm mt-2">Please wait while we prepare the spinner</div>
       </div>
     );
   }
 
-  if (!user || totalItems === 0) {
+  if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-800 text-xl">Game data not available</div>
+        <div className="text-gray-600 text-xl">Please login to continue</div>
+      </div>
+    );
+  }
+
+  if (totalItems === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-600 text-xl">No items selected</div>
       </div>
     );
   }
@@ -387,11 +474,8 @@ export default function SpinnerGame() {
             {/* Enhanced Arrow pointing DOWN to spinner */}
             <div className="flex flex-col items-center relative">
               <div className="relative">
-                {/* Arrow shaft pointing down */}
                 <div className="w-2 h-16 bg-red-600 relative mx-auto"></div>
-                {/* Arrow tip */}
                 <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-0 h-0 border-l-3 border-r-3 border-t-8 border-l-transparent border-r-transparent border-t-red-600"></div>
-                {/* Thin arrow line extending to spinner */}
                 <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-0.5 h-12 bg-red-600"></div>
               </div>
             </div>
@@ -420,7 +504,7 @@ export default function SpinnerGame() {
 
                 return (
                   <div
-                    key={item._id}
+                    key={`${item._id}_${index}`}
                     className="absolute top-0 left-0 w-full h-full"
                     style={{
                       transform: `rotate(${angle}deg)`,
@@ -476,21 +560,7 @@ export default function SpinnerGame() {
            isSpinning ? `Spinning... (${spinDuration}s)` : 'Spin Wheel'}
         </button>
 
-        {/* Sound Status Indicator */}
-        {/* {isSoundPlaying && !isSpinning && (
-          <div className="mb-4">
-            <div className="inline-flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-              <span className="mr-2">🔊 Playing game sound...</span>
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-              </div>
-            </div>
-          </div>
-        )} */}
-
-        {/* Winner Modal with Enhanced Animation */}
+        {/* Winner Modal */}
         {showWinnerModal && winnerItem && (
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
             <div 
@@ -510,14 +580,10 @@ export default function SpinnerGame() {
                   : 'scale-75 opacity-0 translate-y-10'
               }`}
             >
-              {/* X Button at top right - ONLY CLOSES MODAL */}
               <button
                 onClick={() => {
                   setIsModalVisible(false);
-                  setTimeout(() => {
-                    setShowWinnerModal(false);
-                    // Does NOT redirect, just closes modal
-                  }, 300);
+                  setTimeout(() => setShowWinnerModal(false), 300);
                 }}
                 className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-200 z-20 bg-white rounded-full p-1 shadow-sm"
                 title="Close"
@@ -531,9 +597,7 @@ export default function SpinnerGame() {
                   Winner Item!
                 </h2>
                 
-                {/* Winner Item Card */}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-6 border border-blue-200 shadow-lg">
-                  {/* Animated Item Image Container */}
                   <div className="w-full h-56 mb-4 rounded-lg bg-white p-3 shadow-inner overflow-hidden relative">
                     {winnerItem.image ? (
                       <img
@@ -548,7 +612,6 @@ export default function SpinnerGame() {
                     )}
                   </div>
                   
-                  {/* Item Details */}
                   <div className="space-y-3">
                     <h3 className="text-xl font-bold text-gray-900 truncate">
                       {winnerItem.name}
@@ -560,24 +623,7 @@ export default function SpinnerGame() {
                   </div>
                 </div>
 
-                {/* Two buttons: Play Again and Return to Lobby */}
                 <div className="flex flex-col gap-3">
-                  {/* <button
-                    onClick={() => {
-                      setIsModalVisible(false);
-                      setTimeout(() => {
-                        setShowWinnerModal(false);
-                        // Reset game state for another spin
-                        setRotation(0);
-                        setCurrentItemIndex(0);
-                        setWinnerItem(null);
-                      }, 300);
-                    }}
-                    className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 rounded-lg font-bold hover:from-green-700 hover:to-green-800 transition-all duration-300 transform hover:scale-105 shadow-lg"
-                  >
-                    Spin Again
-                  </button> */}
-                  
                   <button
                     onClick={() => {
                       setIsModalVisible(false);
@@ -597,7 +643,6 @@ export default function SpinnerGame() {
         )}
       </div>
 
-      {/* Add CSS animation for zoom in-out effect */}
       <style jsx>{`
         @keyframes zoominout {
           0% {
