@@ -444,7 +444,7 @@ export default function SpinnerPage() {
         let audioPath = '';
         
         if (soundType === 'spinner') {
-          audioPath = '/Audio/game/spinner.m4a';
+          audioPath = '/Audio/game/spinner.mp3';
           if (!spinnerAudioRef.current) {
             spinnerAudioRef.current = new Audio(audioPath);
           }
